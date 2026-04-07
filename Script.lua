@@ -15,26 +15,12 @@ local player = Players.LocalPlayer
 if not _G.VexonStealthHubInit then
 	_G.VexonStealthHubInit = true
 	
-	local lastPlayerCount = #Players:GetPlayers()
-	local serverHopDetected = false
-	
-	-- Detect server hop by monitoring player count and game state
-	RunService.Heartbeat:Connect(function()
-		if not _G.VexonStealthHubInit then return end
-		
-		local currentPlayerCount = #Players:GetPlayers()
-		
-		-- If player count changed significantly or we detect we're in a new server
-		if math.abs(currentPlayerCount - lastPlayerCount) > 3 then
-			if not serverHopDetected and lastPlayerCount > 0 then
-				serverHopDetected = true
-				print("🔄 Server change detected! Auto-reloading Vexon StealHub...")
-				task.wait(1.5)
-				_G.VexonStealthHubInit = false
-				loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentalile/VexonStealHub/refs/heads/main/Script.lua",true))()
-				return
-			end
-			lastPlayerCount = currentPlayerCount
+	-- Listen for teleport and auto-reload
+	TeleportService.Teleported:Connect(function()
+		task.wait(2)  -- Wait for new server to fully load
+		if not _G.VexonStealthHubInit then
+			print("🔄 Detected teleport! Auto-reloading Vexon StealHub on new server...")
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentalile/VexonStealHub/refs/heads/main/Script.lua",true))()
 		end
 	end)
 	
@@ -44,7 +30,7 @@ if not _G.VexonStealthHubInit then
 		print("🛑 Vexon StealHub stopped (Roblox closing)")
 	end)
 else
-	print("✅ Vexon StealHub reloading on new server...")
+	print("✅ Vexon StealHub loaded on new server!")
 end
 
 -- Clean up old GUI instances
@@ -90,6 +76,9 @@ local function doServerHop()
 
 		if #validServers > 0 then
 			local picked = validServers[math.random(1, #validServers)]
+			print("🔄 Hopping to new server... Auto-reload will activate on arrival")
+			_G.VexonStealthHubInit = false
+			task.wait(0.5)
 			TeleportService:TeleportToPlaceInstance(game.PlaceId, picked.id, player)
 		else
 			print("❌ No other servers found")
@@ -102,6 +91,8 @@ end
 -- Rejoin - rejoins the exact current server using JobId
 local function doRejoin()
 	print("🔄 Vexon: Rejoining current server...")
+	_G.VexonStealthHubInit = false
+	task.wait(0.5)
 	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
 end
 
