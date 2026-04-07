@@ -11,26 +11,43 @@ local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
 
--- Auto-execute on server hop
-local lastJobId = game.JobId
-local autoExecuteActive = true
+-- Setup global auto-execute if not already done
+if not _G.VexonStealthHubInit then
+	_G.VexonStealthHubInit = true
+	
+	local lastPlayerCount = #Players:GetPlayers()
+	local serverHopDetected = false
+	
+	-- Detect server hop by monitoring player count and game state
+	RunService.Heartbeat:Connect(function()
+		if not _G.VexonStealthHubInit then return end
+		
+		local currentPlayerCount = #Players:GetPlayers()
+		
+		-- If player count changed significantly or we detect we're in a new server
+		if math.abs(currentPlayerCount - lastPlayerCount) > 3 then
+			if not serverHopDetected and lastPlayerCount > 0 then
+				serverHopDetected = true
+				print("🔄 Server change detected! Auto-reloading Vexon StealHub...")
+				task.wait(1.5)
+				_G.VexonStealthHubInit = false
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentalile/VexonStealHub/refs/heads/main/Script.lua",true))()
+				return
+			end
+			lastPlayerCount = currentPlayerCount
+		end
+	end)
+	
+	-- Stop on Roblox close
+	game:BindToClose(function()
+		_G.VexonStealthHubInit = false
+		print("🛑 Vexon StealHub stopped (Roblox closing)")
+	end)
+else
+	print("✅ Vexon StealHub reloading on new server...")
+end
 
-game:GetService("RunService").Heartbeat:Connect(function()
-	if autoExecuteActive and game.JobId ~= lastJobId then
-		lastJobId = game.JobId
-		print("🔄 Server hop detected! Auto-reloading Vexon StealHub...")
-		task.wait(1)
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentalile/VexonStealHub/refs/heads/main/Script.lua",true))()
-	end
-end)
-
--- Stop auto-execute when Roblox closes
-game:BindToClose(function()
-	autoExecuteActive = false
-	print("🛑 Vexon StealHub auto-execute stopped (Roblox closing)")
-end)
-
--- Clean up old instances before creating new ones
+-- Clean up old GUI instances
 pcall(function()
 	if CoreGui:FindFirstChild("VexonStealHub") then
 		CoreGui:FindFirstChild("VexonStealHub"):Destroy()
