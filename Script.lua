@@ -11,26 +11,22 @@ local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
 
--- Setup global auto-execute if not already done
-if not _G.VexonStealthHubInit then
-	_G.VexonStealthHubInit = true
+-- Setup auto-execute listener once (like Infinite Yield)
+if not _G.VexonListenerSetup then
+	_G.VexonListenerSetup = true
 	
-	-- Listen for teleport and auto-reload
+	-- Listen for any teleport and auto-reload
 	TeleportService.Teleported:Connect(function()
 		task.wait(2)  -- Wait for new server to fully load
-		if not _G.VexonStealthHubInit then
-			print("🔄 Detected teleport! Auto-reloading Vexon StealHub on new server...")
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentalile/VexonStealHub/refs/heads/main/Script.lua",true))()
-		end
+		print("🔄 Detected teleport! Auto-reloading Vexon StealHub on new server...")
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentalile/VexonStealHub/refs/heads/main/Script.lua",true))()
 	end)
 	
 	-- Stop on Roblox close
 	game:BindToClose(function()
-		_G.VexonStealthHubInit = false
+		_G.VexonListenerSetup = false
 		print("🛑 Vexon StealHub stopped (Roblox closing)")
 	end)
-else
-	print("✅ Vexon StealHub loaded on new server!")
 end
 
 -- Clean up old GUI instances
@@ -76,8 +72,7 @@ local function doServerHop()
 
 		if #validServers > 0 then
 			local picked = validServers[math.random(1, #validServers)]
-			print("🔄 Hopping to new server... Auto-reload will activate on arrival")
-			_G.VexonStealthHubInit = false
+			print("🔄 Hopping to new server...")
 			task.wait(0.5)
 			TeleportService:TeleportToPlaceInstance(game.PlaceId, picked.id, player)
 		else
@@ -91,7 +86,6 @@ end
 -- Rejoin - rejoins the exact current server using JobId
 local function doRejoin()
 	print("🔄 Vexon: Rejoining current server...")
-	_G.VexonStealthHubInit = false
 	task.wait(0.5)
 	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
 end
