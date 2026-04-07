@@ -1,5 +1,6 @@
 -- Vexon StealHub v1.0 - Clean Grey Bubbly UI
 -- ESP now shows simplified numbers (1.2K, 1.3M, 1.1B, 2.4T)
+-- Auto-executes on server hops like Infinite Yield
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -9,6 +10,32 @@ local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
+
+-- Auto-execute on server hop
+local lastJobId = game.JobId
+local autoExecuteActive = true
+
+game:GetService("RunService").Heartbeat:Connect(function()
+	if autoExecuteActive and game.JobId ~= lastJobId then
+		lastJobId = game.JobId
+		print("🔄 Server hop detected! Auto-reloading Vexon StealHub...")
+		task.wait(1)
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentalile/VexonStealHub/refs/heads/main/Script.lua",true))()
+	end
+end)
+
+-- Stop auto-execute when Roblox closes
+game:BindToClose(function()
+	autoExecuteActive = false
+	print("🛑 Vexon StealHub auto-execute stopped (Roblox closing)")
+end)
+
+-- Clean up old instances before creating new ones
+pcall(function()
+	if CoreGui:FindFirstChild("VexonStealHub") then
+		CoreGui:FindFirstChild("VexonStealHub"):Destroy()
+	end
+end)
 
 -- Number formatter for ESP
 local function formatNumber(num)
@@ -572,4 +599,4 @@ player.CharacterAdded:Connect(function(newChar)
 	end
 end)
 
-print("✅ Vexon StealHub loaded! Clean grey bubbly UI ready.")
+print("✅ Vexon StealHub loaded! Auto-execute enabled - enjoy server hopping!")
