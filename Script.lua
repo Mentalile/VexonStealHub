@@ -603,20 +603,19 @@ local secretParts = {
 local highlightedSecrets = {}
 local originalColors = {}
 
-local function checkAndHighlightPart(part)
-	if not part:IsA("BasePart") then return end
-	
+local function checkAndHighlightPart(model)
+	-- The secret parts are in PlacedItems > SECRET_[name]_placed_[id] > Main
 	for _, secretName in ipairs(secretParts) do
-		-- Check if part name starts with the secret name (handles _placed_[numbers] suffix)
-		if string.sub(part.Name, 1, #secretName) == secretName then
-			if not highlightedSecrets[part] then
+		if string.sub(model.Name, 1, #secretName) == secretName then
+			local mainPart = model:FindFirstChild("Main")
+			if mainPart and mainPart:IsA("BasePart") and not highlightedSecrets[mainPart] then
 				-- Store original color and make it glow golden
-				originalColors[part] = part.Color
-				part.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
-				part.Material = Enum.Material.Neon  -- Neon for glow effect
+				originalColors[mainPart] = mainPart.Color
+				mainPart.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
+				mainPart.Material = Enum.Material.Neon  -- Neon for glow effect
 				
-				highlightedSecrets[part] = true
-				print("✨ Found secret part: " .. part.Name)
+				highlightedSecrets[mainPart] = true
+				print("✨ Found secret part: " .. model.Name)
 			end
 			break
 		end
@@ -629,24 +628,24 @@ createToggle("Highlight Secret Parts", false, function(state)
 		safeDisconnect("secretScan")
 		safeDisconnect("secretDescendantAdded")
 		
-		-- Defer initial scan to next frame to avoid blocking
+		-- Initial scan of PlacedItems for existing secret parts
 		task.spawn(function()
-			for _, part in ipairs(workspace:GetDescendants()) do
-				checkAndHighlightPart(part)
+			local placedItems = workspace:FindFirstChild("PlacedItems")
+			if placedItems then
+				for _, model in ipairs(placedItems:GetChildren()) do
+					checkAndHighlightPart(model)
+				end
 			end
 		end)
 		
-		-- Throttle part detection to prevent lag from rapid DescendantAdded events
-		local lastCheckTime = 0
-		local checkThrottle = 0.05  -- Only check every 50ms max
-		
-		connections.secretDescendantAdded = workspace.DescendantAdded:Connect(function(part)
-			local currentTime = tick()
-			if currentTime - lastCheckTime >= checkThrottle then
-				lastCheckTime = currentTime
-				checkAndHighlightPart(part)
-			end
-		end)
+		-- Listen for new secret parts being added to PlacedItems
+		local placedItems = workspace:FindFirstChild("PlacedItems")
+		if placedItems then
+			connections.secretDescendantAdded = placedItems.ChildAdded:Connect(function(model)
+				task.wait(0.1)  -- Wait for model to fully load
+				checkAndHighlightPart(model)
+			end)
+		end
 	else
 		safeDisconnect("secretScan")
 		safeDisconnect("secretDescendantAdded")
