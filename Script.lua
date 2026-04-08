@@ -436,6 +436,61 @@ function createPlayerESP(plr)
 	end)
 end
 
+-- 4b. Secret Parts Highlighter
+local secretParts = {
+	"SECRET_ASCENDINGEGG",
+	"SECRET_LOOTPLACEHOLDER",
+	"SECRET_SEVEN",
+	"SECRET_SIX",
+	"SECRET_SUPERBLOCKSCAPE",
+	"SECRET_SUPERBLOCKSFEDORA",
+	"SECRET_SUPERBLOCKSHAD",
+	"SECRET_SUPERBLOCKSHADES",
+	"SECRET_SUPERBLOCKSOILET"
+}
+
+local highlightedSecrets = {}
+
+createToggle("Highlight Secret Parts", false, function(state)
+	featureStates.secretHighlight = state
+	if state then
+		-- Start scanning for secret parts
+		safeDisconnect("secretScan")
+		connections.secretScan = RunService.Heartbeat:Connect(function()
+			for _, secretName in ipairs(secretParts) do
+				local secretPart = workspace:FindFirstChild(secretName)
+				if secretPart and secretPart:IsA("BasePart") then
+					if not highlightedSecrets[secretName] then
+						-- Create highlight
+						local highlight = Instance.new("Highlight")
+						highlight.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
+						highlight.OutlineColor = Color3.fromRGB(255, 140, 0)  -- Orange outline
+						highlight.OutlineTransparency = 0.2
+						highlight.Transparency = 0.3
+						highlight.Parent = secretPart
+						
+						-- Add outline for better visibility
+						pcall(function()
+							secretPart.CanCollide = secretPart.CanCollide  -- Keep original collision
+						end)
+						
+						highlightedSecrets[secretName] = highlight
+						print("✨ Found secret part: " .. secretName)
+					end
+				end
+			end
+		end)
+	else
+		safeDisconnect("secretScan")
+		for secretName, highlight in pairs(highlightedSecrets) do
+			if highlight and highlight.Parent then
+				pcall(function() highlight:Destroy() end)
+			end
+		end
+		highlightedSecrets = {}
+	end
+end)
+
 -- 5. Super Steal (vfly + noclip)
 local FLY_SPEED = 30
 local flySpeeds = {
