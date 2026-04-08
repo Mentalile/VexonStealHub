@@ -603,33 +603,48 @@ local secretParts = {
 local highlightedSecrets = {}
 
 local function createSecretESP(mainPart, modelName)
-	if highlightedSecrets[mainPart] then return end
+	if highlightedSecrets[mainPart] then 
+		print("⚠️  Already highlighted: " .. modelName)
+		return 
+	end
 	
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "SecretESP"
-	billboard.MaxDistance = 500  -- Visible from far away
-	billboard.Size = UDim2.new(4, 0, 2, 0)
-	billboard.StudsOffset = Vector3.new(0, 3, 0)
-	billboard.Parent = mainPart
+	local success, err = pcall(function()
+		local billboard = Instance.new("BillboardGui")
+		billboard.Name = "SecretESP"
+		billboard.MaxDistance = 500  -- Visible from far away
+		billboard.Size = UDim2.new(4, 0, 2, 0)
+		billboard.StudsOffset = Vector3.new(0, 3, 0)
+		billboard.Parent = mainPart
+		
+		print("  → Billboard created, setting textlabel...")
+		
+		local textLabel = Instance.new("TextLabel")
+		textLabel.Name = "TextLabel"
+		textLabel.Text = modelName
+		textLabel.Size = UDim2.new(1, 0, 1, 0)
+		textLabel.BackgroundColor3 = Color3.fromRGB(255, 200, 50)  -- Golden yellow
+		textLabel.BackgroundTransparency = 0.2
+		textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)  -- Black text
+		textLabel.TextScaled = true
+		textLabel.Font = Enum.Font.GothamBold
+		textLabel.Parent = billboard
+		
+		print("  → TextLabel created and parented")
+		
+		-- Add corner radius
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 6)
+		corner.Parent = textLabel
+		
+		highlightedSecrets[mainPart] = billboard
+		print("✨ Successfully created ESP for: " .. modelName)
+		print("   Part location: " .. tostring(mainPart.Position))
+		print("   Part parent: " .. tostring(mainPart.Parent))
+	end)
 	
-	local textLabel = Instance.new("TextLabel")
-	textLabel.Name = "TextLabel"
-	textLabel.Text = modelName
-	textLabel.Size = UDim2.new(1, 0, 1, 0)
-	textLabel.BackgroundColor3 = Color3.fromRGB(255, 200, 50)  -- Golden yellow
-	textLabel.BackgroundTransparency = 0.2
-	textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)  -- Black text
-	textLabel.TextScaled = true
-	textLabel.Font = Enum.Font.GothamBold
-	textLabel.Parent = billboard
-	
-	-- Add corner radius
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 6)
-	corner.Parent = textLabel
-	
-	highlightedSecrets[mainPart] = billboard
-	print("✨ Created ESP for secret part: " .. modelName)
+	if not success then
+		print("❌ ERROR creating ESP: " .. tostring(err))
+	end
 end
 
 local function checkAndHighlightPart(model)
@@ -637,9 +652,23 @@ local function checkAndHighlightPart(model)
 	for _, secretName in ipairs(secretParts) do
 		local isMatch = string.sub(model.Name, 1, #secretName) == secretName
 		if isMatch then
+			print("🔍 Matched " .. secretName .. " in model: " .. model.Name)
 			local mainPart = model:FindFirstChild("Main")
-			if mainPart and mainPart:IsA("BasePart") then
-				createSecretESP(mainPart, model.Name)
+			if mainPart then
+				print("  ✓ Found Main part: " .. tostring(mainPart))
+				if mainPart:IsA("BasePart") then
+					print("  ✓ Main part is a BasePart")
+					createSecretESP(mainPart, model.Name)
+				else
+					print("  ✗ Main part is not a BasePart, it's a: " .. mainPart.ClassName)
+				end
+			else
+				print("  ✗ No Main part found in model")
+				local childNames = {}
+				for _, child in ipairs(model:GetChildren()) do
+					table.insert(childNames, child.Name)
+				end
+				print("    Model children: " .. table.concat(childNames, ", "))
 			end
 			break
 		end
