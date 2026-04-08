@@ -609,37 +609,21 @@ local function createSecretESP(mainPart, modelName)
 	end
 	
 	local success, err = pcall(function()
-		local billboard = Instance.new("BillboardGui")
-		billboard.Adornee = mainPart
-		billboard.MaxDistance = 500  -- Visible from far away
-		billboard.Size = UDim2.new(0, 150, 0, 40)
-		billboard.StudsOffset = Vector3.new(0, 3, 0)
-		billboard.AlwaysOnTop = true
-		billboard.Parent = CoreGui
+		-- Use Highlight to show through walls
+		local highlight = Instance.new("Highlight")
+		highlight.Name = "SecretHighlight"
+		highlight.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
+		highlight.OutlineColor = Color3.fromRGB(255, 140, 0)  -- Orange outline
+		highlight.OutlineTransparency = 0  -- Solid outline
+		highlight.Transparency = 0.3  -- Some transparency but visible
+		highlight.Parent = mainPart
 		
-		print("  → Billboard created with Adornee, setting textlabel...")
-		
-		local textLabel = Instance.new("TextLabel")
-		textLabel.Name = "TextLabel"
-		textLabel.Text = modelName
-		textLabel.Size = UDim2.new(1, 0, 1, 0)
-		textLabel.BackgroundColor3 = Color3.fromRGB(255, 200, 50)  -- Golden yellow
-		textLabel.BackgroundTransparency = 0.2
-		textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)  -- Black text
-		textLabel.TextScaled = true
-		textLabel.TextStrokeTransparency = 0
-		textLabel.TextStrokeColor3 = Color3.fromRGB(100, 100, 0)
-		textLabel.Font = Enum.Font.GothamBold
-		textLabel.Parent = billboard
-		
-		print("  → TextLabel created and parented")
-		
-		highlightedSecrets[mainPart] = billboard
-		print("✨ Successfully created ESP for: " .. modelName)
+		highlightedSecrets[mainPart] = highlight
+		print("✨ Successfully created Highlight ESP for: " .. modelName)
 	end)
 	
 	if not success then
-		print("❌ ERROR creating ESP: " .. tostring(err))
+		print("❌ ERROR creating Highlight: " .. tostring(err))
 	end
 end
 
