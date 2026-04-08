@@ -90,9 +90,22 @@ end
 
 -- Rejoin - rejoins the exact current server using JobId
 local function doRejoin()
+	local currentTime = tick()
+	if currentTime - lastServerHopTime < serverHopCooldown then
+		print("⏳ Teleport cooldown active. Wait " .. math.ceil(serverHopCooldown - (currentTime - lastServerHopTime)) .. "s")
+		return
+	end
+	
+	lastServerHopTime = currentTime
 	print("🔄 Vexon: Rejoining current server...")
 	task.wait(0.5)
-	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+	local success, err = pcall(function()
+		TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+	end)
+	if not success then
+		print("❌ Rejoin failed: " .. tostring(err))
+		lastServerHopTime = 0  -- Reset cooldown on failure
+	end
 end
 
 -- Create GUI
@@ -355,6 +368,32 @@ local function safeDisconnect(key)
 		connections[key] = nil
 	end
 end
+
+-- Global cleanup function to prevent memory leaks
+local function cleanup()
+	for key, conn in pairs(connections) do
+		safeDisconnect(key)
+	end
+	for plr, gui in pairs(espObjects) do
+		if gui and gui.Parent then
+			pcall(function() gui:Destroy() end)
+		end
+	end
+	espObjects = {}
+end
+
+-- Cleanup on script reload
+game:GetService("RunService").Heartbeat:Connect(function()
+	-- Periodically check for orphaned connections (every 30 seconds)
+	if math.random(1, 1800) == 1 then
+		-- Clean up any nil connections
+		for key in pairs(connections) do
+			if not connections[key] or (typeof(connections[key]) == "RBXScriptConnection" and not connections[key].Connected) then
+				connections[key] = nil
+			end
+		end
+	end
+end)
 
 -- 1. Infinite Jump
 createToggle("Infinite Jump", false, function(state)
