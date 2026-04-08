@@ -604,18 +604,30 @@ local highlightedSecrets = {}
 local originalColors = {}
 
 local function checkAndHighlightPart(model)
+	-- Debug: show what we're checking
+	print("🔍 Checking model: " .. model.Name)
+	
 	-- The secret parts are in PlacedItems > SECRET_[name]_placed_[id] > Main
 	for _, secretName in ipairs(secretParts) do
-		if string.sub(model.Name, 1, #secretName) == secretName then
+		local isMatch = string.sub(model.Name, 1, #secretName) == secretName
+		if isMatch then
+			print("✓ Found match! " .. secretName .. " in " .. model.Name)
 			local mainPart = model:FindFirstChild("Main")
-			if mainPart and mainPart:IsA("BasePart") and not highlightedSecrets[mainPart] then
-				-- Store original color and make it glow golden
-				originalColors[mainPart] = mainPart.Color
-				mainPart.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
-				mainPart.Material = Enum.Material.Neon  -- Neon for glow effect
-				
-				highlightedSecrets[mainPart] = true
-				print("✨ Found secret part: " .. model.Name)
+			if mainPart then
+				print("  → Found Main part")
+				if mainPart:IsA("BasePart") and not highlightedSecrets[mainPart] then
+					-- Store original color and make it glow golden
+					originalColors[mainPart] = mainPart.Color
+					mainPart.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
+					mainPart.Material = Enum.Material.Neon  -- Neon for glow effect
+					
+					highlightedSecrets[mainPart] = true
+					print("✨ Found secret part: " .. model.Name)
+				else
+					print("  → Already highlighted or not a BasePart")
+				end
+			else
+				print("  → No Main part found in model")
 			end
 			break
 		end
@@ -625,6 +637,7 @@ end
 createToggle("Highlight Secret Parts", false, function(state)
 	featureStates.secretHighlight = state
 	if state then
+		print("🎯 Secret Highlighter ENABLED - scanning PlacedItems...")
 		safeDisconnect("secretScan")
 		safeDisconnect("secretDescendantAdded")
 		
@@ -632,9 +645,14 @@ createToggle("Highlight Secret Parts", false, function(state)
 		task.spawn(function()
 			local placedItems = workspace:FindFirstChild("PlacedItems")
 			if placedItems then
-				for _, model in ipairs(placedItems:GetChildren()) do
+				print("✓ Found PlacedItems folder")
+				local children = placedItems:GetChildren()
+				print("  → Contains " .. #children .. " items")
+				for _, model in ipairs(children) do
 					checkAndHighlightPart(model)
 				end
+			else
+				print("❌ PlacedItems folder not found!")
 			end
 		end)
 		
@@ -642,6 +660,7 @@ createToggle("Highlight Secret Parts", false, function(state)
 		local placedItems = workspace:FindFirstChild("PlacedItems")
 		if placedItems then
 			connections.secretDescendantAdded = placedItems.ChildAdded:Connect(function(model)
+				print("📦 New item added to PlacedItems: " .. model.Name)
 				task.wait(0.1)  -- Wait for model to fully load
 				checkAndHighlightPart(model)
 			end)
