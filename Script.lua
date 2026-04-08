@@ -601,33 +601,45 @@ local secretParts = {
 }
 
 local highlightedSecrets = {}
-local originalColors = {}
+
+local function createSecretESP(mainPart, modelName)
+	if highlightedSecrets[mainPart] then return end
+	
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "SecretESP"
+	billboard.MaxDistance = 500  -- Visible from far away
+	billboard.Size = UDim2.new(4, 0, 2, 0)
+	billboard.StudsOffset = Vector3.new(0, 3, 0)
+	billboard.Parent = mainPart
+	
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Name = "TextLabel"
+	textLabel.Text = modelName
+	textLabel.Size = UDim2.new(1, 0, 1, 0)
+	textLabel.BackgroundColor3 = Color3.fromRGB(255, 200, 50)  -- Golden yellow
+	textLabel.BackgroundTransparency = 0.2
+	textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)  -- Black text
+	textLabel.TextScaled = true
+	textLabel.Font = Enum.Font.GothamBold
+	textLabel.Parent = billboard
+	
+	-- Add corner radius
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 6)
+	corner.Parent = textLabel
+	
+	highlightedSecrets[mainPart] = billboard
+	print("✨ Created ESP for secret part: " .. modelName)
+end
 
 local function checkAndHighlightPart(model)
-	-- Debug: show what we're checking
-	print("🔍 Checking model: " .. model.Name)
-	
 	-- The secret parts are in PlacedItems > SECRET_[name]_placed_[id] > Main
 	for _, secretName in ipairs(secretParts) do
 		local isMatch = string.sub(model.Name, 1, #secretName) == secretName
 		if isMatch then
-			print("✓ Found match! " .. secretName .. " in " .. model.Name)
 			local mainPart = model:FindFirstChild("Main")
-			if mainPart then
-				print("  → Found Main part")
-				if mainPart:IsA("BasePart") and not highlightedSecrets[mainPart] then
-					-- Store original color and make it glow golden
-					originalColors[mainPart] = mainPart.Color
-					mainPart.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
-					mainPart.Material = Enum.Material.Neon  -- Neon for glow effect
-					
-					highlightedSecrets[mainPart] = true
-					print("✨ Found secret part: " .. model.Name)
-				else
-					print("  → Already highlighted or not a BasePart")
-				end
-			else
-				print("  → No Main part found in model")
+			if mainPart and mainPart:IsA("BasePart") then
+				createSecretESP(mainPart, model.Name)
 			end
 			break
 		end
@@ -668,19 +680,13 @@ createToggle("Highlight Secret Parts", false, function(state)
 	else
 		safeDisconnect("secretScan")
 		safeDisconnect("secretDescendantAdded")
-		-- Restore original colors
-		for part in pairs(highlightedSecrets) do
-			if part and part.Parent then
-				pcall(function()
-					if originalColors[part] then
-						part.Color = originalColors[part]
-						part.Material = Enum.Material.Plastic
-					end
-				end)
+		-- Destroy billboards
+		for part, billboard in pairs(highlightedSecrets) do
+			if billboard and billboard.Parent then
+				pcall(function() billboard:Destroy() end)
 			end
 		end
 		highlightedSecrets = {}
-		originalColors = {}
 	end
 end)
 
