@@ -602,38 +602,48 @@ local secretParts = {
 
 local highlightedSecrets = {}
 
+local function checkAndHighlightPart(part)
+	if not part:IsA("BasePart") then return end
+	
+	for _, secretName in ipairs(secretParts) do
+		-- Check if part name starts with the secret name (handles _placed_[numbers] suffix)
+		if string.sub(part.Name, 1, #secretName) == secretName then
+			if not highlightedSecrets[part] then
+				-- Create highlight
+				local highlight = Instance.new("Highlight")
+				highlight.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
+				highlight.OutlineColor = Color3.fromRGB(255, 140, 0)  -- Orange outline
+				highlight.OutlineTransparency = 0.2
+				highlight.Transparency = 0.3
+				highlight.Parent = part
+				
+				highlightedSecrets[part] = highlight
+				print("✨ Found secret part: " .. part.Name)
+			end
+			break
+		end
+	end
+end
+
 createToggle("Highlight Secret Parts", false, function(state)
 	featureStates.secretHighlight = state
 	if state then
-		-- Start scanning for secret parts
 		safeDisconnect("secretScan")
-		connections.secretScan = RunService.Heartbeat:Connect(function()
-			for _, part in ipairs(workspace:GetDescendants()) do
-				if part:IsA("BasePart") then
-					for _, secretName in ipairs(secretParts) do
-						-- Check if part name starts with the secret name (handles _placed_[numbers] suffix)
-						if string.sub(part.Name, 1, #secretName) == secretName then
-							local uniqueKey = part
-							if not highlightedSecrets[uniqueKey] then
-								-- Create highlight
-								local highlight = Instance.new("Highlight")
-								highlight.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
-								highlight.OutlineColor = Color3.fromRGB(255, 140, 0)  -- Orange outline
-								highlight.OutlineTransparency = 0.2
-								highlight.Transparency = 0.3
-								highlight.Parent = part
-								
-								highlightedSecrets[uniqueKey] = highlight
-								print("✨ Found secret part: " .. part.Name)
-							end
-						end
-					end
-				end
-			end
+		safeDisconnect("secretDescendantAdded")
+		
+		-- Initial scan of existing parts
+		for _, part in ipairs(workspace:GetDescendants()) do
+			checkAndHighlightPart(part)
+		end
+		
+		-- Listen for new parts being added to workspace
+		connections.secretDescendantAdded = workspace.DescendantAdded:Connect(function(part)
+			checkAndHighlightPart(part)
 		end)
 	else
 		safeDisconnect("secretScan")
-		for secretName, highlight in pairs(highlightedSecrets) do
+		safeDisconnect("secretDescendantAdded")
+		for part, highlight in pairs(highlightedSecrets) do
 			if highlight and highlight.Parent then
 				pcall(function() highlight:Destroy() end)
 			end
