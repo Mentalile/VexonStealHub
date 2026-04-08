@@ -46,45 +46,52 @@ local function doServerHop()
 	end
 	
 	lastServerHopTime = currentTime
-	print("🚀 Vexon: Finding random server...")
+	print("🚀 Vexon: Searching for available servers...")
 	
 	local success, result = pcall(function()
 		return HttpService:JSONDecode(
-			game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100", true)
+			game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true", true)
 		)
 	end)
 
 	if not success then
 		print("❌ Failed to fetch servers: " .. tostring(result))
+		lastServerHopTime = 0
 		return
 	end
 	
 	if not result or not result.data then
 		print("❌ Invalid server data received")
+		lastServerHopTime = 0
 		return
 	end
 
 	local validServers = {}
 	for _, server in ipairs(result.data) do
-		if server.id and server.id ~= game.JobId and server.playing and server.maxPlayers and server.playing < server.maxPlayers then
-			table.insert(validServers, server)
+		if type(server) == "table" and 
+		   server.id and 
+		   type(tonumber(server.playing)) == "number" and 
+		   type(tonumber(server.maxPlayers)) == "number" and 
+		   server.id ~= game.JobId and 
+		   tonumber(server.playing) < tonumber(server.maxPlayers) then
+			table.insert(validServers, server.id)
 		end
 	end
 
 	if #validServers > 0 then
-		local picked = validServers[math.random(1, #validServers)]
-		print("🔄 Hopping to new server... (" .. picked.playing .. "/" .. picked.maxPlayers .. " players)")
+		local pickedServer = validServers[math.random(1, #validServers)]
+		print("🔄 Found server! Hopping...")
 		task.wait(0.5)
 		local teleportSuccess, teleportErr = pcall(function()
-			TeleportService:TeleportToPlaceInstance(game.PlaceId, picked.id, player)
+			TeleportService:TeleportToPlaceInstance(game.PlaceId, pickedServer, player)
 		end)
 		if not teleportSuccess then
 			print("❌ Teleport failed: " .. tostring(teleportErr))
 			lastServerHopTime = 0  -- Reset cooldown if teleport fails
 		end
 	else
-		print("❌ No other servers found")
-		lastServerHopTime = 0  -- Reset cooldown if no servers
+		print("❌ Serverhop: Couldn't find a server.")
+		lastServerHopTime = 0  -- Reset cooldown if no servers found
 	end
 end
 
