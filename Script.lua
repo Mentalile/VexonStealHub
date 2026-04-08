@@ -1,6 +1,5 @@
 -- Vexon StealHub v1.0 - Clean Grey Bubbly UI
 -- ESP now shows simplified numbers (1.2K, 1.3M, 1.1B, 2.4T)
--- Auto-executes on server hops like Infinite Yield
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -10,24 +9,6 @@ local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
-
--- Setup auto-execute listener once (like Infinite Yield)
-if not _G.VexonListenerSetup then
-	_G.VexonListenerSetup = true
-	
-	-- Listen for any teleport and auto-reload
-	TeleportService.Teleported:Connect(function()
-		task.wait(2)  -- Wait for new server to fully load
-		print("🔄 Detected teleport! Auto-reloading Vexon StealHub on new server...")
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentalile/VexonStealHub/refs/heads/main/Script.lua",true))()
-	end)
-	
-	-- Stop on Roblox close
-	game:BindToClose(function()
-		_G.VexonListenerSetup = false
-		print("🛑 Vexon StealHub stopped (Roblox closing)")
-	end)
-end
 
 -- Clean up old GUI instances
 pcall(function()
@@ -601,4 +582,4 @@ player.CharacterAdded:Connect(function(newChar)
 	end
 end)
 
-print("✅ Vexon StealHub loaded! Auto-execute enabled - enjoy server hopping!")
+print("✅ Vexon StealHub loaded! Enjoy the features.")
