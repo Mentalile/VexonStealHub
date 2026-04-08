@@ -612,7 +612,7 @@ local function createSecretESP(mainPart, modelName)
 		-- Use Highlight to show through walls
 		local highlight = Instance.new("Highlight")
 		highlight.Name = "SecretHighlight"
-		highlight.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
+		highlight.FillColor = Color3.fromRGB(255, 200, 50)  -- Golden yellow
 		highlight.OutlineColor = Color3.fromRGB(255, 140, 0)  -- Orange outline
 		highlight.OutlineTransparency = 0  -- Solid outline
 		highlight.Transparency = 0.3  -- Some transparency but visible
