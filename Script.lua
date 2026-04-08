@@ -608,25 +608,25 @@ createToggle("Highlight Secret Parts", false, function(state)
 		-- Start scanning for secret parts
 		safeDisconnect("secretScan")
 		connections.secretScan = RunService.Heartbeat:Connect(function()
-			for _, secretName in ipairs(secretParts) do
-				local secretPart = workspace:FindFirstChild(secretName)
-				if secretPart and secretPart:IsA("BasePart") then
-					if not highlightedSecrets[secretName] then
-						-- Create highlight
-						local highlight = Instance.new("Highlight")
-						highlight.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
-						highlight.OutlineColor = Color3.fromRGB(255, 140, 0)  -- Orange outline
-						highlight.OutlineTransparency = 0.2
-						highlight.Transparency = 0.3
-						highlight.Parent = secretPart
-						
-						-- Add outline for better visibility
-						pcall(function()
-							secretPart.CanCollide = secretPart.CanCollide  -- Keep original collision
-						end)
-						
-						highlightedSecrets[secretName] = highlight
-						print("✨ Found secret part: " .. secretName)
+			for _, part in ipairs(workspace:GetDescendants()) do
+				if part:IsA("BasePart") then
+					for _, secretName in ipairs(secretParts) do
+						-- Check if part name starts with the secret name (handles _placed_[numbers] suffix)
+						if string.sub(part.Name, 1, #secretName) == secretName then
+							local uniqueKey = part
+							if not highlightedSecrets[uniqueKey] then
+								-- Create highlight
+								local highlight = Instance.new("Highlight")
+								highlight.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
+								highlight.OutlineColor = Color3.fromRGB(255, 140, 0)  -- Orange outline
+								highlight.OutlineTransparency = 0.2
+								highlight.Transparency = 0.3
+								highlight.Parent = part
+								
+								highlightedSecrets[uniqueKey] = highlight
+								print("✨ Found secret part: " .. part.Name)
+							end
+						end
 					end
 				end
 			end
