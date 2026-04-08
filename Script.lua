@@ -34,33 +34,57 @@ local function formatNumber(num)
 	end
 end
 
--- Server hop - picks a random different server
+-- Server hop with cooldown and error handling
+local lastServerHopTime = 0
+local serverHopCooldown = 2  -- 2 second cooldown between hops
+
 local function doServerHop()
+	local currentTime = tick()
+	if currentTime - lastServerHopTime < serverHopCooldown then
+		print("⏳ Server hop cooldown active. Wait " .. math.ceil(serverHopCooldown - (currentTime - lastServerHopTime)) .. "s")
+		return
+	end
+	
+	lastServerHopTime = currentTime
 	print("🚀 Vexon: Finding random server...")
-	local success, servers = pcall(function()
+	
+	local success, result = pcall(function()
 		return HttpService:JSONDecode(
-			game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
+			game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100", true)
 		)
 	end)
 
-	if success and servers and servers.data then
-		local validServers = {}
-		for _, server in ipairs(servers.data) do
-			if server.id ~= game.JobId and server.playing < server.maxPlayers then
-				table.insert(validServers, server)
-			end
-		end
+	if not success then
+		print("❌ Failed to fetch servers: " .. tostring(result))
+		return
+	end
+	
+	if not result or not result.data then
+		print("❌ Invalid server data received")
+		return
+	end
 
-		if #validServers > 0 then
-			local picked = validServers[math.random(1, #validServers)]
-			print("🔄 Hopping to new server...")
-			task.wait(0.5)
+	local validServers = {}
+	for _, server in ipairs(result.data) do
+		if server.id and server.id ~= game.JobId and server.playing and server.maxPlayers and server.playing < server.maxPlayers then
+			table.insert(validServers, server)
+		end
+	end
+
+	if #validServers > 0 then
+		local picked = validServers[math.random(1, #validServers)]
+		print("🔄 Hopping to new server... (" .. picked.playing .. "/" .. picked.maxPlayers .. " players)")
+		task.wait(0.5)
+		local teleportSuccess, teleportErr = pcall(function()
 			TeleportService:TeleportToPlaceInstance(game.PlaceId, picked.id, player)
-		else
-			print("❌ No other servers found")
+		end)
+		if not teleportSuccess then
+			print("❌ Teleport failed: " .. tostring(teleportErr))
+			lastServerHopTime = 0  -- Reset cooldown if teleport fails
 		end
 	else
-		print("❌ Failed to fetch servers")
+		print("❌ No other servers found")
+		lastServerHopTime = 0  -- Reset cooldown if no servers
 	end
 end
 
