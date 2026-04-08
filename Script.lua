@@ -601,6 +601,7 @@ local secretParts = {
 }
 
 local highlightedSecrets = {}
+local originalColors = {}
 
 local function checkAndHighlightPart(part)
 	if not part:IsA("BasePart") then return end
@@ -609,15 +610,12 @@ local function checkAndHighlightPart(part)
 		-- Check if part name starts with the secret name (handles _placed_[numbers] suffix)
 		if string.sub(part.Name, 1, #secretName) == secretName then
 			if not highlightedSecrets[part] then
-				-- Create highlight
-				local highlight = Instance.new("Highlight")
-				highlight.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
-				highlight.OutlineColor = Color3.fromRGB(255, 140, 0)  -- Orange outline
-				highlight.OutlineTransparency = 0.2
-				highlight.Transparency = 0.3
-				highlight.Parent = part
+				-- Store original color and make it glow golden
+				originalColors[part] = part.Color
+				part.Color = Color3.fromRGB(255, 200, 50)  -- Golden yellow
+				part.Material = Enum.Material.Neon  -- Neon for glow effect
 				
-				highlightedSecrets[part] = highlight
+				highlightedSecrets[part] = true
 				print("✨ Found secret part: " .. part.Name)
 			end
 			break
@@ -652,12 +650,19 @@ createToggle("Highlight Secret Parts", false, function(state)
 	else
 		safeDisconnect("secretScan")
 		safeDisconnect("secretDescendantAdded")
-		for part, highlight in pairs(highlightedSecrets) do
-			if highlight and highlight.Parent then
-				pcall(function() highlight:Destroy() end)
+		-- Restore original colors
+		for part in pairs(highlightedSecrets) do
+			if part and part.Parent then
+				pcall(function()
+					if originalColors[part] then
+						part.Color = originalColors[part]
+						part.Material = Enum.Material.Plastic
+					end
+				end)
 			end
 		end
 		highlightedSecrets = {}
+		originalColors = {}
 	end
 end)
 
