@@ -671,6 +671,16 @@ createToggle("Highlight Secret Parts", false, function(state)
 				print("✓ Found PlacedItems folder")
 				local children = placedItems:GetChildren()
 				print("  → Contains " .. #children .. " items")
+				
+				-- Debug: show all SECRET_ prefixed items
+				print("\n📋 All SECRET_ items found:")
+				for _, model in ipairs(children) do
+					if string.sub(model.Name, 1, 7) == "SECRET_" then
+						print("  • " .. model.Name)
+					end
+				end
+				print("")
+				
 				for _, model in ipairs(children) do
 					checkAndHighlightPart(model)
 				end
