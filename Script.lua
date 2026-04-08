@@ -438,6 +438,17 @@ end
 
 -- 5. Super Steal (vfly + noclip)
 local FLY_SPEED = 30
+local flySpeeds = {
+	keyboard = 30,
+	mobile = 60
+}
+
+-- Detect if user is on mobile
+local function isMobileUser()
+	return UserInputService:GetGamepadState(Enum.UserInputType.Gamepad1)[1] == nil and 
+		   (not game:FindService("GuiService")) or 
+		   UserInputService:GetMouseDelta() == Vector2.new(0, 0)
+end
 
 createToggle("Super Steal (Slow V-Fly + Noclip)", false, function(state)
 	featureStates.superSteal = state
@@ -474,12 +485,15 @@ createToggle("Super Steal (Slow V-Fly + Noclip)", false, function(state)
 		connections.superStealBV.Velocity = Vector3.new(0, 0, 0)
 		connections.superStealBV.Parent = root
 
-		-- Enable fly
+		-- Enable fly - works for both PC and Mobile
 		connections.superStealFly = RunService.RenderStepped:Connect(function()
 			if connections.superStealBV and connections.superStealBV.Parent then
 				local cam = workspace.CurrentCamera
 				local moveDir = Vector3.new(0, 0, 0)
+				local isMobile = UserInputService:FindFirstChild("Gamepad1") == nil and 
+					game:GetService("UserInputService"):GetGamepadState(Enum.UserInputType.Gamepad1) == nil
 
+				-- Keyboard controls (PC)
 				if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
 				if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
 				if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
@@ -487,15 +501,24 @@ createToggle("Super Steal (Slow V-Fly + Noclip)", false, function(state)
 				if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
 				if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
 
-				if moveDir.Magnitude > 0 then
-					connections.superStealBV.Velocity = moveDir.Unit * FLY_SPEED
+				-- Mobile controls - follow camera direction
+				if moveDir.Magnitude == 0 then
+					-- No keyboard input, use camera direction (mobile users)
+					moveDir = cam.CFrame.LookVector
+					local currentSpeed = flySpeeds.mobile
+					connections.superStealBV.Velocity = moveDir * currentSpeed
 				else
-					connections.superStealBV.Velocity = Vector3.new(0, 0, 0)
+					-- Keyboard input detected
+					if moveDir.Magnitude > 0 then
+						connections.superStealBV.Velocity = moveDir.Unit * flySpeeds.keyboard
+					else
+						connections.superStealBV.Velocity = Vector3.new(0, 0, 0)
+					end
 				end
 			end
 		end)
 
-		print("🌀 Vexon Super Steal ENABLED (slow fly + noclip)")
+		print("🌀 Vexon Super Steal ENABLED (works on PC & Mobile)")
 	else
 		-- Cleanup
 		safeDisconnect("superStealNoclip")
@@ -558,7 +581,7 @@ player.CharacterAdded:Connect(function(newChar)
 			connections.superStealBV.Velocity = Vector3.new(0, 0, 0)
 			connections.superStealBV.Parent = root
 
-			-- Re-enable fly
+			-- Re-enable fly (mobile compatible)
 			connections.superStealFly = RunService.RenderStepped:Connect(function()
 				if connections.superStealBV and connections.superStealBV.Parent then
 					local cam = workspace.CurrentCamera
@@ -571,10 +594,12 @@ player.CharacterAdded:Connect(function(newChar)
 					if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
 					if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
 
-					if moveDir.Magnitude > 0 then
-						connections.superStealBV.Velocity = moveDir.Unit * FLY_SPEED
+					-- Mobile controls - follow camera direction if no keyboard input
+					if moveDir.Magnitude == 0 then
+						moveDir = cam.CFrame.LookVector
+						connections.superStealBV.Velocity = moveDir * flySpeeds.mobile
 					else
-						connections.superStealBV.Velocity = Vector3.new(0, 0, 0)
+						connections.superStealBV.Velocity = moveDir.Unit * flySpeeds.keyboard
 					end
 				end
 			end)
