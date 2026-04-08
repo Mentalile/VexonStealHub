@@ -77,60 +77,88 @@ screenGui.Name = "VexonStealHub"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = CoreGui
 
+-- Track minimized state
+local isMinimized = false
+
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 380, 0, 480)
-mainFrame.Position = UDim2.new(0.5, -190, 0.5, -240)
-mainFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+mainFrame.Size = UDim2.new(0, 380, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -190, 0.5, -250)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 18)
+corner.CornerRadius = UDim.new(0, 16)
 corner.Parent = mainFrame
 
 local stroke = Instance.new("UIStroke")
-stroke.Color = Color3.fromRGB(55, 55, 55)
-stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(50, 50, 70)
+stroke.Thickness = 1.5
 stroke.Parent = mainFrame
 
 -- Title bar (draggable)
 local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 50)
-titleBar.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+titleBar.Size = UDim2.new(1, 0, 0, 55)
+titleBar.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
 
 local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 18)
+titleCorner.CornerRadius = UDim.new(0, 16)
 titleCorner.Parent = titleBar
 
+-- Gradient effect on title bar
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 120, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 22))
+})
+gradient.Rotation = 90
+gradient.Parent = titleBar
+
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -100, 1, 0)
-titleLabel.Position = UDim2.new(0, 20, 0, 0)
+titleLabel.Size = UDim2.new(1, -120, 1, 0)
+titleLabel.Position = UDim2.new(0, 15, 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "VEXON"
-titleLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextScaled = true
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = titleBar
 
-local versionLabel = Instance.new("TextLabel")
-versionLabel.Size = UDim2.new(0, 80, 1, 0)
-versionLabel.Position = UDim2.new(1, -100, 0, 0)
-versionLabel.BackgroundTransparency = 1
-versionLabel.Text = "STEAL HUB"
-versionLabel.TextColor3 = Color3.fromRGB(140, 180, 255)
-versionLabel.TextScaled = true
-versionLabel.Font = Enum.Font.Gotham
-versionLabel.TextXAlignment = Enum.TextXAlignment.Right
-versionLabel.Parent = titleBar
+-- Move "STEAL HUB" and version to a subtitle area
+local subtitleLabel = Instance.new("TextLabel")
+subtitleLabel.Size = UDim2.new(1, -30, 0, 20)
+subtitleLabel.Position = UDim2.new(0, 15, 0, 32)
+subtitleLabel.BackgroundTransparency = 1
+subtitleLabel.Text = "STEAL HUB v1.0"
+subtitleLabel.TextColor3 = Color3.fromRGB(150, 180, 255)
+subtitleLabel.TextSize = 12
+subtitleLabel.Font = Enum.Font.Gotham
+subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+subtitleLabel.Parent = titleBar
+
+-- Minimize button
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 35, 0, 35)
+minimizeBtn.Position = UDim2.new(1, -80, 0, 10)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 130)
+minimizeBtn.Text = "−"
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.TextScaled = true
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.Parent = titleBar
+
+local minimizeCorner = Instance.new("UICorner")
+minimizeCorner.CornerRadius = UDim.new(0, 8)
+minimizeCorner.Parent = minimizeBtn
 
 -- Close button
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 40, 0, 40)
-closeBtn.Position = UDim2.new(1, -45, 0, 5)
-closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+closeBtn.Size = UDim2.new(0, 35, 0, 35)
+closeBtn.Position = UDim2.new(1, -40, 0, 10)
+closeBtn.BackgroundColor3 = Color3.fromRGB(220, 80, 80)
 closeBtn.Text = "✕"
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.TextScaled = true
@@ -138,8 +166,47 @@ closeBtn.Font = Enum.Font.GothamBold
 closeBtn.Parent = titleBar
 
 local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(1, 0)
+closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeBtn
+
+-- Minimize frame (when minimized)
+local minimizedFrame = Instance.new("Frame")
+minimizedFrame.Size = UDim2.new(0, 90, 0, 45)
+minimizedFrame.Position = UDim2.new(0.5, -45, 0.5, -22)
+minimizedFrame.BackgroundColor3 = Color3.fromRGB(20, 120, 255)
+minimizedFrame.BorderSizePixel = 0
+minimizedFrame.Visible = false
+minimizedFrame.Parent = screenGui
+
+local minimizedCorner = Instance.new("UICorner")
+minimizedCorner.CornerRadius = UDim.new(0, 12)
+minimizedCorner.Parent = minimizedFrame
+
+local minimizedLabel = Instance.new("TextLabel")
+minimizedLabel.Size = UDim2.new(1, 0, 1, 0)
+minimizedLabel.BackgroundTransparency = 1
+minimizedLabel.Text = "VEXON"
+minimizedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizedLabel.TextScaled = true
+minimizedLabel.Font = Enum.Font.GothamBold
+minimizedLabel.Parent = minimizedFrame
+
+-- Minimize/Restore functionality
+minimizeBtn.MouseButton1Click:Connect(function()
+	isMinimized = not isMinimized
+	mainFrame.Visible = not isMinimized
+	minimizedFrame.Visible = isMinimized
+	minimizeBtn.Text = isMinimized and "+" or "−"
+end)
+
+minimizedFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		isMinimized = false
+		mainFrame.Visible = true
+		minimizedFrame.Visible = false
+		minimizeBtn.Text = "−"
+	end
+end)
 
 closeBtn.MouseButton1Click:Connect(function()
 	screenGui:Destroy()
@@ -168,11 +235,11 @@ end)
 
 -- Scrolling content
 local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1, -20, 1, -70)
-scroll.Position = UDim2.new(0, 10, 0, 60)
+scroll.Size = UDim2.new(1, -20, 1, -80)
+scroll.Position = UDim2.new(0, 10, 0, 70)
 scroll.BackgroundTransparency = 1
 scroll.ScrollBarThickness = 6
-scroll.ScrollBarImageColor3 = Color3.fromRGB(80, 140, 255)
+scroll.ScrollBarImageColor3 = Color3.fromRGB(100, 150, 255)
 scroll.Parent = mainFrame
 
 local listLayout = Instance.new("UIListLayout")
@@ -188,44 +255,49 @@ padding.Parent = scroll
 -- Toggle creator (clean bubbly style)
 local function createToggle(name, defaultState, callback)
 	local toggleFrame = Instance.new("Frame")
-	toggleFrame.Size = UDim2.new(1, 0, 0, 55)
-	toggleFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	toggleFrame.Size = UDim2.new(1, 0, 0, 50)
+	toggleFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
 	toggleFrame.BorderSizePixel = 0
 	toggleFrame.Parent = scroll
 
 	local tCorner = Instance.new("UICorner")
-	tCorner.CornerRadius = UDim.new(0, 14)
+	tCorner.CornerRadius = UDim.new(0, 10)
 	tCorner.Parent = toggleFrame
 
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(0.7, 0, 1, 0)
+	label.Size = UDim2.new(0.65, 0, 1, 0)
 	label.BackgroundTransparency = 1
 	label.Text = name
-	label.TextColor3 = Color3.fromRGB(230, 230, 230)
+	label.TextColor3 = Color3.fromRGB(240, 240, 245)
 	label.TextScaled = true
 	label.Font = Enum.Font.GothamSemibold
 	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextWrapped = true
 	label.Parent = toggleFrame
 
+	local label2 = Instance.new("UIPadding")
+	label2.PaddingLeft = UDim.new(0, 12)
+	label2.Parent = label
+
 	local switch = Instance.new("TextButton")
-	switch.Size = UDim2.new(0, 70, 0, 35)
-	switch.Position = UDim2.new(1, -85, 0.5, -17.5)
-	switch.BackgroundColor3 = defaultState and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(120, 120, 120)
+	switch.Size = UDim2.new(0, 65, 0, 32)
+	switch.Position = UDim2.new(1, -82, 0.5, -16)
+	switch.BackgroundColor3 = defaultState and Color3.fromRGB(100, 220, 140) or Color3.fromRGB(100, 100, 130)
 	switch.Text = defaultState and "ON" or "OFF"
 	switch.TextColor3 = Color3.fromRGB(255, 255, 255)
-	switch.TextScaled = true
+	switch.TextSize = 12
 	switch.Font = Enum.Font.GothamBold
 	switch.Parent = toggleFrame
 
 	local sCorner = Instance.new("UICorner")
-	sCorner.CornerRadius = UDim.new(1, 0)
+	sCorner.CornerRadius = UDim.new(0, 8)
 	sCorner.Parent = switch
 
 	local state = defaultState
 
 	switch.MouseButton1Click:Connect(function()
 		state = not state
-		switch.BackgroundColor3 = state and Color3.fromRGB(80, 200, 120) or Color3.fromRGB(120, 120, 120)
+		switch.BackgroundColor3 = state and Color3.fromRGB(100, 220, 140) or Color3.fromRGB(100, 100, 130)
 		switch.Text = state and "ON" or "OFF"
 		callback(state)
 	end)
@@ -281,74 +353,83 @@ end)
 
 -- 2. Server Hop
 local hopFrame = Instance.new("Frame")
-hopFrame.Size = UDim2.new(1, 0, 0, 55)
-hopFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+hopFrame.Size = UDim2.new(1, 0, 0, 50)
+hopFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
 hopFrame.BorderSizePixel = 0
 hopFrame.Parent = scroll
 
 local hopCorner = Instance.new("UICorner")
-hopCorner.CornerRadius = UDim.new(0, 14)
+hopCorner.CornerRadius = UDim.new(0, 10)
 hopCorner.Parent = hopFrame
 
 local hopLabel = Instance.new("TextLabel")
-hopLabel.Size = UDim2.new(0.7, 0, 1, 0)
+hopLabel.Size = UDim2.new(0.65, 0, 1, 0)
 hopLabel.BackgroundTransparency = 1
-hopLabel.Text = "Server Hop (click to hop)"
-hopLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+hopLabel.Text = "Server Hop"
+hopLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
 hopLabel.TextScaled = true
 hopLabel.Font = Enum.Font.GothamSemibold
 hopLabel.TextXAlignment = Enum.TextXAlignment.Left
 hopLabel.Parent = hopFrame
 
+local hopPad = Instance.new("UIPadding")
+hopPad.PaddingLeft = UDim.new(0, 12)
+hopPad.Parent = hopLabel
+
 local hopBtn = Instance.new("TextButton")
-hopBtn.Size = UDim2.new(0, 100, 0, 35)
-hopBtn.Position = UDim2.new(1, -115, 0.5, -17.5)
-hopBtn.BackgroundColor3 = Color3.fromRGB(80, 140, 255)
+hopBtn.Size = UDim2.new(0, 65, 0, 32)
+hopBtn.Position = UDim2.new(1, -82, 0.5, -16)
+hopBtn.BackgroundColor3 = Color3.fromRGB(100, 180, 255)
 hopBtn.Text = "HOP"
 hopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-hopBtn.TextScaled = true
+hopBtn.TextSize = 12
 hopBtn.Font = Enum.Font.GothamBold
 hopBtn.Parent = hopFrame
 
 local hopBCorner = Instance.new("UICorner")
-hopBCorner.CornerRadius = UDim.new(0, 12)
+hopBCorner.CornerRadius = UDim.new(0, 8)
 hopBCorner.Parent = hopBtn
 
 hopBtn.MouseButton1Click:Connect(doServerHop)
 
 -- 3. Rejoin
 local rejoinFrame = Instance.new("Frame")
-rejoinFrame.Size = UDim2.new(1, 0, 0, 55)
-rejoinFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+rejoinFrame.Size = UDim2.new(1, 0, 0, 50)
+rejoinFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
 rejoinFrame.BorderSizePixel = 0
 rejoinFrame.Parent = scroll
 
 local rejoinCorner = Instance.new("UICorner")
-rejoinCorner.CornerRadius = UDim.new(0, 14)
+rejoinCorner.CornerRadius = UDim.new(0, 10)
 rejoinCorner.Parent = rejoinFrame
 
 local rejoinLabel = Instance.new("TextLabel")
-rejoinLabel.Size = UDim2.new(0.7, 0, 1, 0)
+rejoinLabel.Size = UDim2.new(0.65, 0, 1, 0)
 rejoinLabel.BackgroundTransparency = 1
-rejoinLabel.Text = "Rejoin Current Server"
-rejoinLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+rejoinLabel.Text = "Rejoin Server"
+rejoinLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
 rejoinLabel.TextScaled = true
 rejoinLabel.Font = Enum.Font.GothamSemibold
 rejoinLabel.TextXAlignment = Enum.TextXAlignment.Left
 rejoinLabel.Parent = rejoinFrame
 
+local rejoinPad = Instance.new("UIPadding")
+rejoinPad.PaddingLeft = UDim.new(0, 12)
+rejoinPad.Parent = rejoinLabel
+
+
 local rejoinBtn = Instance.new("TextButton")
-rejoinBtn.Size = UDim2.new(0, 100, 0, 35)
-rejoinBtn.Position = UDim2.new(1, -115, 0.5, -17.5)
-rejoinBtn.BackgroundColor3 = Color3.fromRGB(255, 160, 50)
+rejoinBtn.Size = UDim2.new(0, 65, 0, 32)
+rejoinBtn.Position = UDim2.new(1, -82, 0.5, -16)
+rejoinBtn.BackgroundColor3 = Color3.fromRGB(255, 160, 80)
 rejoinBtn.Text = "REJOIN"
 rejoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-rejoinBtn.TextScaled = true
+rejoinBtn.TextSize = 12
 rejoinBtn.Font = Enum.Font.GothamBold
 rejoinBtn.Parent = rejoinFrame
 
 local rejoinBCorner = Instance.new("UICorner")
-rejoinBCorner.CornerRadius = UDim.new(0, 12)
+rejoinBCorner.CornerRadius = UDim.new(0, 8)
 rejoinBCorner.Parent = rejoinBtn
 
 rejoinBtn.MouseButton1Click:Connect(doRejoin)
