@@ -609,21 +609,23 @@ local function createSecretESP(mainPart, modelName)
 	end
 	
 	local success, err = pcall(function()
-		-- Use Highlight to show through walls
-		local highlight = Instance.new("Highlight")
-		highlight.Name = "SecretHighlight"
-		highlight.FillColor = Color3.fromRGB(255, 200, 50)  -- Golden yellow
-		highlight.OutlineColor = Color3.fromRGB(255, 140, 0)  -- Orange outline
-		highlight.OutlineTransparency = 0  -- Solid outline
-		highlight.Transparency = 0.3  -- Some transparency but visible
-		highlight.Parent = mainPart
+		-- Use BoxHandleAdornment for visible wireframe ESP
+		local boxAdorn = Instance.new("BoxHandleAdornment")
+		boxAdorn.Name = modelName:lower().."_SESP"
+		boxAdorn.Parent = mainPart
+		boxAdorn.Adornee = mainPart
+		boxAdorn.AlwaysOnTop = true
+		boxAdorn.ZIndex = 0
+		boxAdorn.Size = mainPart.Size
+		boxAdorn.Transparency = 0.3
+		boxAdorn.Color = BrickColor.new("Lime green")
 		
-		highlightedSecrets[mainPart] = highlight
-		print("✨ Successfully created Highlight ESP for: " .. modelName)
+		highlightedSecrets[mainPart] = boxAdorn
+		print("✨ Successfully created BoxHandle ESP for: " .. modelName)
 	end)
 	
 	if not success then
-		print("❌ ERROR creating Highlight: " .. tostring(err))
+		print("❌ ERROR creating BoxHandleAdornment: " .. tostring(err))
 	end
 end
 
