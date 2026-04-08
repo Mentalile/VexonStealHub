@@ -610,13 +610,14 @@ local function createSecretESP(mainPart, modelName)
 	
 	local success, err = pcall(function()
 		local billboard = Instance.new("BillboardGui")
-		billboard.Name = "SecretESP"
+		billboard.Adornee = mainPart
 		billboard.MaxDistance = 500  -- Visible from far away
-		billboard.Size = UDim2.new(4, 0, 2, 0)
+		billboard.Size = UDim2.new(0, 150, 0, 40)
 		billboard.StudsOffset = Vector3.new(0, 3, 0)
-		billboard.Parent = mainPart
+		billboard.AlwaysOnTop = true
+		billboard.Parent = CoreGui
 		
-		print("  → Billboard created, setting textlabel...")
+		print("  → Billboard created with Adornee, setting textlabel...")
 		
 		local textLabel = Instance.new("TextLabel")
 		textLabel.Name = "TextLabel"
@@ -626,20 +627,15 @@ local function createSecretESP(mainPart, modelName)
 		textLabel.BackgroundTransparency = 0.2
 		textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)  -- Black text
 		textLabel.TextScaled = true
+		textLabel.TextStrokeTransparency = 0
+		textLabel.TextStrokeColor3 = Color3.fromRGB(100, 100, 0)
 		textLabel.Font = Enum.Font.GothamBold
 		textLabel.Parent = billboard
 		
 		print("  → TextLabel created and parented")
 		
-		-- Add corner radius
-		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(0, 6)
-		corner.Parent = textLabel
-		
 		highlightedSecrets[mainPart] = billboard
 		print("✨ Successfully created ESP for: " .. modelName)
-		print("   Part location: " .. tostring(mainPart.Position))
-		print("   Part parent: " .. tostring(mainPart.Parent))
 	end)
 	
 	if not success then
