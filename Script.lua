@@ -631,14 +631,23 @@ createToggle("Highlight Secret Parts", false, function(state)
 		safeDisconnect("secretScan")
 		safeDisconnect("secretDescendantAdded")
 		
-		-- Initial scan of existing parts
-		for _, part in ipairs(workspace:GetDescendants()) do
-			checkAndHighlightPart(part)
-		end
+		-- Defer initial scan to next frame to avoid blocking
+		task.spawn(function()
+			for _, part in ipairs(workspace:GetDescendants()) do
+				checkAndHighlightPart(part)
+			end
+		end)
 		
-		-- Listen for new parts being added to workspace
+		-- Throttle part detection to prevent lag from rapid DescendantAdded events
+		local lastCheckTime = 0
+		local checkThrottle = 0.05  -- Only check every 50ms max
+		
 		connections.secretDescendantAdded = workspace.DescendantAdded:Connect(function(part)
-			checkAndHighlightPart(part)
+			local currentTime = tick()
+			if currentTime - lastCheckTime >= checkThrottle then
+				lastCheckTime = currentTime
+				checkAndHighlightPart(part)
+			end
 		end)
 	else
 		safeDisconnect("secretScan")
