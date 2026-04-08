@@ -191,7 +191,9 @@ minimizedLabel.TextScaled = true
 minimizedLabel.Font = Enum.Font.GothamBold
 minimizedLabel.Parent = minimizedFrame
 
--- Minimize/Restore functionality
+-- Minimize/Restore functionality and dragging
+local minimizedDragging, minimizedDragStart, minimizedStartPos
+
 minimizeBtn.MouseButton1Click:Connect(function()
 	isMinimized = not isMinimized
 	mainFrame.Visible = not isMinimized
@@ -201,10 +203,15 @@ end)
 
 minimizedFrame.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		isMinimized = false
-		mainFrame.Visible = true
-		minimizedFrame.Visible = false
-		minimizeBtn.Text = "−"
+		minimizedDragging = true
+		minimizedDragStart = input.Position
+		minimizedStartPos = minimizedFrame.Position
+	end
+end)
+
+minimizedFrame.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		minimizedDragging = false
 	end
 end)
 
@@ -230,6 +237,10 @@ UserInputService.InputChanged:Connect(function(input)
 	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 		local delta = input.Position - dragStart
 		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+	if minimizedDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - minimizedDragStart
+		minimizedFrame.Position = UDim2.new(minimizedStartPos.X.Scale, minimizedStartPos.X.Offset + delta.X, minimizedStartPos.Y.Scale, minimizedStartPos.Y.Offset + delta.Y)
 	end
 end)
 
