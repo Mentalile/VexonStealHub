@@ -522,7 +522,6 @@ ESPTab:CreateToggle({
 			end
 			espObjects = {}
 		end
-		end
 	end,
 })
 
@@ -769,28 +768,32 @@ local function updateLeaderboard()
 		leaderboardText = leaderboardText .. string.format("%d | %s | %d | $%s\n", i, stat.name, stat.steals, stat.cashFormatted)
 	end
 	
-	-- Clear previous labels
-	for _, child in ipairs(LeaderboardTab:GetChildren()) do
-		if child:IsA("TextLabel") and child.Name:find("LeaderboardEntry") then
-			pcall(function() child:Destroy() end)
-		end
-	end
-	
-	-- Add leaderboard content
-	LeaderboardTab:CreateLabel(leaderboardText)
+	-- Return formatted text (no need to update UI directly)
+	return leaderboardText
 end
+
+-- Create a label to display the leaderboard
+local leaderboardLabel = LeaderboardTab:CreateLabel("")
 
 LeaderboardTab:CreateButton({
 	Name = "Refresh Leaderboard",
 	Callback = function()
-		updateLeaderboard()
+		local text = updateLeaderboard()
+		leaderboardLabel:Set(text)
+		Rayfield:Notify({
+			Title = "Leaderboard",
+			Content = "Leaderboard updated!",
+			Duration = 2,
+			Image = 4483362417,
+		})
 	end,
 })
 
 -- Auto-update leaderboard every 2 seconds
 connections.leaderboardUpdate = game:GetService("RunService").Heartbeat:Connect(function()
 	if math.random(1, 120) == 1 then  -- Update every ~2 seconds
-		updateLeaderboard()
+		local text = updateLeaderboard()
+		pcall(function() leaderboardLabel:Set(text) end)
 	end
 end)
 
