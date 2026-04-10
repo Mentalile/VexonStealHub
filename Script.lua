@@ -482,8 +482,22 @@ ESPTab:CreateToggle({
 						local char = plr.Character
 						local humanoid = char:FindFirstChildOfClass("Humanoid")
 						if humanoid and humanoid.Health > 0 then
-							-- Update text with player name only
-							gui.TextLabel.Text = plr.Name
+							-- Get cash and steals from leaderstats
+							local cash = "?"
+							local steals = "?"
+							pcall(function()
+								if plr:FindFirstChild("leaderstats") then
+									local stats = plr.leaderstats
+									if stats:FindFirstChild("Cash") then
+										cash = formatNumber(stats.Cash.Value)
+									end
+									if stats:FindFirstChild("Steals") then
+										steals = tostring(stats.Steals.Value)
+									end
+								end
+							end)
+							-- Update text with name, steals, and formatted cash
+							gui.TextLabel.Text = plr.Name .. " | " .. steals .. " | $" .. cash
 						else
 							if espObjects[plr] then
 								pcall(function() espObjects[plr]:Destroy() end)
