@@ -510,12 +510,73 @@ ESPTab:CreateToggle({
 		else
 			safeDisconnect("espAdded")
 			safeDisconnect("espUpdate")
+			-- Clean up chams if ESP is disabled
+			if chamsEnabled then
+				destroyAllChams()
+				chamsEnabled = false
+			end
 			for _, gui in pairs(espObjects) do
 				if gui and gui.Parent then
 					pcall(function() gui:Destroy() end)
 				end
 			end
 			espObjects = {}
+		end
+		end
+	end,
+})
+
+-- Chams Toggle
+ESPTab:CreateToggle({
+	Name = "Chams (Wallhack)",
+	CurrentValue = false,
+	Flag = "Toggle_Chams",
+	Callback = function(Value)
+		chamsEnabled = Value
+		if Value then
+			-- Create chams for existing players
+			for _, plr in ipairs(Players:GetPlayers()) do
+				if plr ~= player then
+					pcall(function() createChams(plr) end)
+				end
+			end
+
+			-- Listen for new players
+			safeDisconnect("chamsAdded")
+			connections.chamsAdded = Players.PlayerAdded:Connect(function(plr)
+				task.wait(0.2)
+				pcall(function() createChams(plr) end)
+			end)
+
+			-- Listen for character changes
+			safeDisconnect("chamsCharAdded")
+			connections.chamsCharAdded = {}
+			for _, plr in ipairs(Players:GetPlayers()) do
+				if plr ~= player then
+					table.insert(connections.chamsCharAdded, plr.CharacterAdded:Connect(function()
+						destroyChams(plr)
+						task.wait(0.2)
+						pcall(function() createChams(plr) end)
+					end))
+				end
+			end
+
+			Rayfield:Notify({
+				Title = "Chams",
+				Content = "Chams enabled for all players",
+				Duration = 2,
+				Image = 4483362417,
+			})
+		else
+			destroyAllChams()
+			safeDisconnect("chamsAdded")
+			safeDisconnect("chamsCharAdded")
+			Rayfield:Notify({
+				Title = "Chams",
+				Content = "Chams disabled",
+				Duration = 2,
+				Image = 4483362417,
+			})
 		end
 	end,
 })
@@ -611,9 +672,131 @@ ESPTab:CreateToggle({
 	end,
 })
 
+-- CHAMS (Wallhack) System
+local chamsObjects = {}
+local chamsEnabled = false
+
+local function createChams(plr)
+	if not plr or not plr.Character or chamsObjects[plr] then return end
+	
+	local char = plr.Character
+	local chamsContainer = Instance.new("Folder")
+	chamsContainer.Name = plr.Name .. "_CHMS"
+	chamsContainer.Parent = CoreGui
+	
+	chamsObjects[plr] = chamsContainer
+	
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local wireframe = Instance.new("Part")
+			wireframe.Shape = Enum.PartType.Block
+			wireframe.Material = Enum.Material.Neon
+			wireframe.CanCollide = false
+			wireframe.CFrame = part.CFrame
+			wireframe.Size = part.Size
+			wireframe.Color = Color3.fromRGB(0, 255, 0)
+			wireframe.Transparency = 0.3
+			wireframe.TopSurface = Enum.SurfaceType.Smooth
+			wireframe.BottomSurface = Enum.SurfaceType.Smooth
+			
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = part
+			weld.Part1 = wireframe
+			weld.Parent = wireframe
+			
+			wireframe.Parent = chamsContainer
+		end
+	end
+end
+
+local function destroyChams(plr)
+	if chamsObjects[plr] then
+		pcall(function() chamsObjects[plr]:Destroy() end)
+		chamsObjects[plr] = nil
+	end
+end
+
+local function destroyAllChams()
+	for plr, container in pairs(chamsObjects) do
+		if container and container.Parent then
+			pcall(function() container:Destroy() end)
+		end
+		chamsObjects[plr] = nil
+	end
+end
+
+-- LEADERBOARD TAB
+local LeaderboardTab = Window:CreateTab("Leaderboard", 4483362417)
+
+local function updateLeaderboard()
+	-- Get all players and their stats
+	local playerStats = {}
+	
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= player then
+			local cash = 0
+			local steals = 0
+			
+			pcall(function()
+				if plr:FindFirstChild("leaderstats") then
+					local stats = plr.leaderstats
+					if stats:FindFirstChild("Cash") then
+						cash = stats.Cash.Value
+					end
+					if stats:FindFirstChild("Steals") then
+						steals = stats.Steals.Value
+					end
+				end
+			end)
+			
+			table.insert(playerStats, {
+				name = plr.Name,
+				steals = steals,
+				cash = cash,
+				cashFormatted = formatNumber(cash)
+			})
+		end
+	end
+	
+	-- Sort by steals (descending)
+	table.sort(playerStats, function(a, b)
+		return a.steals > b.steals
+	end)
+	
+	-- Create leaderboard text
+	local leaderboardText = "RANK | NAME | STEALS | CASH\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+	for i, stat in ipairs(playerStats) do
+		leaderboardText = leaderboardText .. string.format("%d | %s | %d | $%s\n", i, stat.name, stat.steals, stat.cashFormatted)
+	end
+	
+	-- Clear previous labels
+	for _, child in ipairs(LeaderboardTab:GetChildren()) do
+		if child:IsA("TextLabel") and child.Name:find("LeaderboardEntry") then
+			pcall(function() child:Destroy() end)
+		end
+	end
+	
+	-- Add leaderboard content
+	LeaderboardTab:CreateLabel(leaderboardText)
+end
+
+LeaderboardTab:CreateButton({
+	Name = "Refresh Leaderboard",
+	Callback = function()
+		updateLeaderboard()
+	end,
+})
+
+-- Auto-update leaderboard every 2 seconds
+connections.leaderboardUpdate = game:GetService("RunService").Heartbeat:Connect(function()
+	if math.random(1, 120) == 1 then  -- Update every ~2 seconds
+		updateLeaderboard()
+	end
+end)
+
 -- SETTINGS TAB
 SettingsTab:CreateLabel("Version: 1.0 - Rayfield Edition")
-SettingsTab:CreateLabel("Features: Server Hop, Rejoin, ESP, Secret Highlighter")
+SettingsTab:CreateLabel("Features: Server Hop, Rejoin, ESP, Secret Highlighter, Chams, Leaderboard")
 SettingsTab:CreateButton({
 	Name = "Close UI",
 	Callback = function()
@@ -627,6 +810,19 @@ player.CharacterAdded:Connect(function(newChar)
 	-- Disable New Fly on respawn
 	if newFlyEnabled then
 		disableNewFly()
+	end
+end)
+
+-- Handle player leaving
+Players.PlayerRemoving:Connect(function(plr)
+	-- Clean up ESP
+	if espObjects[plr] then
+		pcall(function() espObjects[plr]:Destroy() end)
+		espObjects[plr] = nil
+	end
+	-- Clean up Chams
+	if chamsObjects[plr] then
+		destroyChams(plr)
 	end
 end)
 
