@@ -412,6 +412,68 @@ MainTab:CreateToggle({
 	end,
 })
 
+-- Fly Jump Feature Variables
+local flyJumpEnabled = false
+local flyJumpConnection = nil
+
+local function enableFlyJump()
+	flyJumpEnabled = true
+	
+	-- Disconnect previous connection if it exists
+	if flyJumpConnection then
+		flyJumpConnection:Disconnect()
+		flyJumpConnection = nil
+	end
+	
+	-- Connect to JumpRequest to keep player jumping
+	flyJumpConnection = UserInputService.JumpRequest:Connect(function()
+		if not flyJumpEnabled or not player.Character then return end
+		
+		local humanoid = player.Character:FindFirstChildWhichIsA("Humanoid")
+		if humanoid then
+			pcall(function()
+				humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			end)
+		end
+	end)
+	
+	Rayfield:Notify({
+		Title = "⚠️ Fly Jump",
+		Content = "Fly Jump enabled! WARNING: Semi-detected, may be finicky!",
+		Duration = 4,
+		Image = 4483362417,
+	})
+end
+
+local function disableFlyJump()
+	flyJumpEnabled = false
+	
+	if flyJumpConnection then
+		flyJumpConnection:Disconnect()
+		flyJumpConnection = nil
+	end
+	
+	Rayfield:Notify({
+		Title = "Fly Jump",
+		Content = "Fly Jump disabled",
+		Duration = 2,
+		Image = 4483362417,
+	})
+end
+
+MainTab:CreateToggle({
+	Name = "Fly Jump (Semi-Detected)",
+	CurrentValue = false,
+	Flag = "Toggle_FlyJump",
+	Callback = function(Value)
+		if Value then
+			enableFlyJump()
+		else
+			disableFlyJump()
+		end
+	end,
+})
+
 -- ESP TAB
 local espObjects = {}
 
@@ -686,7 +748,7 @@ end)
 
 -- SETTINGS TAB
 SettingsTab:CreateLabel("Version: 1.0 - Rayfield Edition")
-SettingsTab:CreateLabel("Features: Server Hop, Rejoin, ESP, Secret Highlighter, Leaderboard")
+SettingsTab:CreateLabel("Features: Server Hop, Rejoin, New Fly, Fly Jump, ESP, Secret Highlighter, Leaderboard")
 SettingsTab:CreateButton({
 	Name = "Close UI",
 	Callback = function()
@@ -700,6 +762,10 @@ player.CharacterAdded:Connect(function(newChar)
 	-- Disable New Fly on respawn
 	if newFlyEnabled then
 		disableNewFly()
+	end
+	-- Disable Fly Jump on respawn
+	if flyJumpEnabled then
+		disableFlyJump()
 	end
 end)
 
