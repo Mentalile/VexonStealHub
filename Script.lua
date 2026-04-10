@@ -354,11 +354,6 @@ local function enableNewFly()
 		else
 			newFlyVelocity.Velocity = Vector3.new(0, 0, 0)
 		end
-		
-		-- Rapid freeze/unfreeze spam
-		freezePlayer()
-		task.wait(0.001)  -- Ultra fast cycle
-		unfreezePlayer()
 	end)
 	
 	Rayfield:Notify({
@@ -387,9 +382,6 @@ local function disableNewFly()
 		pcall(function() newFlyGyro:Destroy() end)
 		newFlyGyro = nil
 	end
-	
-	-- Unfreeze player
-	unfreezePlayer()
 	
 	-- Restore humanoid state
 	if char then
