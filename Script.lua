@@ -490,8 +490,8 @@ ESPTab:CreateToggle({
 						local char = plr.Character
 						local humanoid = char:FindFirstChildOfClass("Humanoid")
 						if humanoid and humanoid.Health > 0 then
-							-- Update text with name, cash, steals (if available)
-							gui.TextLabel.Text = plr.Name .. " | [Active]"
+							-- Update text with player name only
+							gui.TextLabel.Text = plr.Name
 						else
 							if espObjects[plr] then
 								pcall(function() espObjects[plr]:Destroy() end)
