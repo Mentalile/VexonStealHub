@@ -258,6 +258,168 @@ MainTab:CreateButton({
 	end,
 })
 
+-- New Fly Feature Variables
+local newFlyEnabled = false
+local newFlyConnection = nil
+local newFlyVelocity = nil
+local newFlyGyro = nil
+
+local function freezePlayer()
+	local char = player.Character
+	if not char then return end
+	
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") and not part.Anchored then
+			pcall(function()
+				part.Anchored = true
+			end)
+		end
+	end
+end
+
+local function unfreezePlayer()
+	local char = player.Character
+	if not char then return end
+	
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") and part.Anchored then
+			pcall(function()
+				part.Anchored = false
+			end)
+		end
+	end
+end
+
+local function enableNewFly()
+	newFlyEnabled = true
+	local char = player.Character
+	if not char then return end
+	
+	local root = char:FindFirstChild("HumanoidRootPart")
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	
+	if not root or not humanoid then return end
+	
+	-- Create BodyVelocity for movement
+	newFlyVelocity = Instance.new("BodyVelocity")
+	newFlyVelocity.Velocity = Vector3.new(0, 0, 0)
+	newFlyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+	newFlyVelocity.Parent = root
+	
+	-- Create BodyGyro for rotation
+	newFlyGyro = Instance.new("BodyGyro")
+	newFlyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+	newFlyGyro.P = 10000
+	newFlyGyro.Parent = root
+	
+	humanoid.PlatformStand = true
+	
+	-- Rapid freeze/unfreeze cycle with VFly 0.3
+	newFlyConnection = RunService.RenderStepped:Connect(function()
+		if not newFlyEnabled or not player.Character then return end
+		
+		local char = player.Character
+		local root = char:FindFirstChild("HumanoidRootPart")
+		local camera = workspace.CurrentCamera
+		
+		if not root or not newFlyVelocity or not newFlyGyro then return end
+		
+		-- Update rotation
+		newFlyGyro.CFrame = camera.CFrame
+		
+		-- Handle movement input (WASD)
+		local moveDir = Vector3.new(0, 0, 0)
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+			moveDir = moveDir + camera.CFrame.LookVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+			moveDir = moveDir - camera.CFrame.LookVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+			moveDir = moveDir - camera.CFrame.RightVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+			moveDir = moveDir + camera.CFrame.RightVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+			moveDir = moveDir + Vector3.new(0, 1, 0)
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+			moveDir = moveDir - Vector3.new(0, 1, 0)
+		end
+		
+		-- Apply movement at 0.3 speed
+		if moveDir.Magnitude > 0 then
+			newFlyVelocity.Velocity = moveDir.Unit * 0.3
+		else
+			newFlyVelocity.Velocity = Vector3.new(0, 0, 0)
+		end
+		
+		-- Rapid freeze/unfreeze spam
+		freezePlayer()
+		task.wait(0.001)  -- Ultra fast cycle
+		unfreezePlayer()
+	end)
+	
+	Rayfield:Notify({
+		Title = "New Fly",
+		Content = "New Fly enabled! Use WASD + Space/Ctrl to move.",
+		Duration = 3,
+		Image = 4483362417,
+	})
+end
+
+local function disableNewFly()
+	newFlyEnabled = false
+	local char = player.Character
+	
+	if newFlyConnection then
+		newFlyConnection:Disconnect()
+		newFlyConnection = nil
+	end
+	
+	if newFlyVelocity then
+		pcall(function() newFlyVelocity:Destroy() end)
+		newFlyVelocity = nil
+	end
+	
+	if newFlyGyro then
+		pcall(function() newFlyGyro:Destroy() end)
+		newFlyGyro = nil
+	end
+	
+	-- Unfreeze player
+	unfreezePlayer()
+	
+	-- Restore humanoid state
+	if char then
+		local humanoid = char:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.PlatformStand = false
+		end
+	end
+	
+	Rayfield:Notify({
+		Title = "New Fly",
+		Content = "New Fly disabled!",
+		Duration = 2,
+		Image = 4483362417,
+	})
+end
+
+MainTab:CreateToggle({
+	Name = "New Fly (Spam Freeze + VFly 0.3)",
+	CurrentValue = false,
+	Flag = "Toggle_NewFly",
+	Callback = function(Value)
+		if Value then
+			enableNewFly()
+		else
+			disableNewFly()
+		end
+	end,
+})
+
 -- ESP TAB
 local espObjects = {}
 
@@ -456,6 +618,10 @@ SettingsTab:CreateButton({
 -- Handle character respawn
 player.CharacterAdded:Connect(function(newChar)
 	wait(0.1)  -- Wait for character to load fully
+	-- Disable New Fly on respawn
+	if newFlyEnabled then
+		disableNewFly()
+	end
 end)
 
 print("✅ Vexon StealHub loaded! Press K to toggle UI.")
