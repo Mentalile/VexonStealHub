@@ -402,26 +402,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 	end
 end)
 
--- 1. Infinite Jump
-createToggle("Infinite Jump", false, function(state)
-	featureStates.infJump = state
-	if state then
-		safeDisconnect("infJump")
-		connections.infJump = UserInputService.JumpRequest:Connect(function()
-			local char = getValidCharacter()
-			if char then
-				local hum = char:FindFirstChildOfClass("Humanoid")
-				if hum then
-					hum:ChangeState(Enum.HumanoidStateType.Jumping)
-				end
-			end
-		end)
-	else
-		safeDisconnect("infJump")
-	end
-end)
-
--- 2. Server Hop
+-- 1. Server Hop
 local hopFrame = Instance.new("Frame")
 hopFrame.Size = UDim2.new(1, 0, 0, 50)
 hopFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
@@ -712,175 +693,15 @@ createToggle("Highlight Secret Parts", false, function(state)
 	end
 end)
 
--- 5. Super Steal (vfly + noclip)
-local FLY_SPEED = 30
-local flySpeeds = {
-	keyboard = 30,
-	mobile = 60
-}
-
--- Detect if user is on mobile
-local function isMobileUser()
-	return UserInputService:GetGamepadState(Enum.UserInputType.Gamepad1)[1] == nil and 
-		   (not game:FindService("GuiService")) or 
-		   UserInputService:GetMouseDelta() == Vector2.new(0, 0)
-end
-
-createToggle("Super Steal (Slow V-Fly + Noclip)", false, function(state)
-	featureStates.superSteal = state
-	local char = getValidCharacter()
-	if not char then return end
-	
-	local root = char:FindFirstChild("HumanoidRootPart")
-	if not root then return end
-
-	if state then
-		-- Cleanup any existing connections
-		safeDisconnect("superStealNoclip")
-		safeDisconnect("superStealFly")
-		if connections.superStealBV then
-			pcall(function() connections.superStealBV:Destroy() end)
-			connections.superStealBV = nil
-		end
-
-		-- Enable noclip
-		connections.superStealNoclip = RunService.Stepped:Connect(function()
-			local currentChar = getValidCharacter()
-			if currentChar then
-				for _, part in ipairs(currentChar:GetDescendants()) do
-					if part:IsA("BasePart") and part.CanCollide then
-						pcall(function() part.CanCollide = false end)
-					end
-				end
-			end
-		end)
-
-		-- Create BodyVelocity for flight
-		connections.superStealBV = Instance.new("BodyVelocity")
-		connections.superStealBV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-		connections.superStealBV.Velocity = Vector3.new(0, 0, 0)
-		connections.superStealBV.Parent = root
-
-		-- Enable fly - works for both PC and Mobile
-		connections.superStealFly = RunService.RenderStepped:Connect(function()
-			if connections.superStealBV and connections.superStealBV.Parent then
-				local cam = workspace.CurrentCamera
-				local moveDir = Vector3.new(0, 0, 0)
-				local isMobile = UserInputService:FindFirstChild("Gamepad1") == nil and 
-					game:GetService("UserInputService"):GetGamepadState(Enum.UserInputType.Gamepad1) == nil
-
-				-- Keyboard controls (PC)
-				if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-				if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-				if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-				if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-				if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
-				if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
-
-				-- Mobile controls - follow camera direction
-				if moveDir.Magnitude == 0 then
-					-- No keyboard input, use camera direction (mobile users)
-					moveDir = cam.CFrame.LookVector
-					local currentSpeed = flySpeeds.mobile
-					connections.superStealBV.Velocity = moveDir * currentSpeed
-				else
-					-- Keyboard input detected
-					if moveDir.Magnitude > 0 then
-						connections.superStealBV.Velocity = moveDir.Unit * flySpeeds.keyboard
-					else
-						connections.superStealBV.Velocity = Vector3.new(0, 0, 0)
-					end
-				end
-			end
-		end)
-
-		print("🌀 Vexon Super Steal ENABLED (works on PC & Mobile)")
-	else
-		-- Cleanup
-		safeDisconnect("superStealNoclip")
-		safeDisconnect("superStealFly")
-		if connections.superStealBV then
-			pcall(function() connections.superStealBV:Destroy() end)
-			connections.superStealBV = nil
-		end
-		
-		-- Restore collision
-		local currentChar = getValidCharacter()
-		if currentChar then
-			for _, part in ipairs(currentChar:GetDescendants()) do
-				if part:IsA("BasePart") then
-					pcall(function() part.CanCollide = true end)
-				end
-			end
-		end
-		print("🛑 Vexon Super Steal DISABLED")
-	end
-end)
-
 -- Scroll canvas size
 scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 20)
 listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 20)
 end)
 
--- Handle character respawn - reinitialize features if they were enabled
+-- Handle character respawn
 player.CharacterAdded:Connect(function(newChar)
 	wait(0.1)  -- Wait for character to load fully
-	
-	-- Re-enable Super Steal if it was on
-	if featureStates.superSteal then
-		local root = newChar:FindFirstChild("HumanoidRootPart")
-		if root then
-			-- Cleanup old connections
-			safeDisconnect("superStealNoclip")
-			safeDisconnect("superStealFly")
-			if connections.superStealBV then
-				pcall(function() connections.superStealBV:Destroy() end)
-				connections.superStealBV = nil
-			end
-
-			-- Re-enable noclip
-			connections.superStealNoclip = RunService.Stepped:Connect(function()
-				local currentChar = getValidCharacter()
-				if currentChar then
-					for _, part in ipairs(currentChar:GetDescendants()) do
-						if part:IsA("BasePart") and part.CanCollide then
-							pcall(function() part.CanCollide = false end)
-						end
-					end
-				end
-			end)
-
-			-- Create BodyVelocity for flight
-			connections.superStealBV = Instance.new("BodyVelocity")
-			connections.superStealBV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-			connections.superStealBV.Velocity = Vector3.new(0, 0, 0)
-			connections.superStealBV.Parent = root
-
-			-- Re-enable fly (mobile compatible)
-			connections.superStealFly = RunService.RenderStepped:Connect(function()
-				if connections.superStealBV and connections.superStealBV.Parent then
-					local cam = workspace.CurrentCamera
-					local moveDir = Vector3.new(0, 0, 0)
-
-					if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-					if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-					if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-					if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-					if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
-					if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir = moveDir - Vector3.new(0, 1, 0) end
-
-					-- Mobile controls - follow camera direction if no keyboard input
-					if moveDir.Magnitude == 0 then
-						moveDir = cam.CFrame.LookVector
-						connections.superStealBV.Velocity = moveDir * flySpeeds.mobile
-					else
-						connections.superStealBV.Velocity = moveDir.Unit * flySpeeds.keyboard
-					end
-				end
-			end)
-		end
-	end
 end)
 
 print("✅ Vexon StealHub loaded! Enjoy the features.")
