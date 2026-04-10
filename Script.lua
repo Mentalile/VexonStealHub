@@ -263,6 +263,9 @@ local newFlyEnabled = false
 local newFlyConnection = nil
 local newFlyVelocity = nil
 local newFlyGyro = nil
+local newFlySpeed = 50  -- Speed 1-100
+local noclipEnabled = false
+local noclipConnection = nil
 
 local function freezePlayer()
 	local char = player.Character
@@ -290,6 +293,36 @@ local function unfreezePlayer()
 	end
 end
 
+local function enableNoclip()
+	noclipEnabled = true
+	if noclipConnection then noclipConnection:Disconnect() end
+	noclipConnection = RunService.Stepped:Connect(function()
+		if not noclipEnabled or not player.Character then return end
+		local char = player.Character
+		for _, part in ipairs(char:GetDescendants()) do
+			if part:IsA("BasePart") then
+				pcall(function() part.CanCollide = false end)
+			end
+		end
+	end)
+end
+
+local function disableNoclip()
+	noclipEnabled = false
+	if noclipConnection then
+		noclipConnection:Disconnect()
+		noclipConnection = nil
+	end
+	local char = player.Character
+	if char then
+		for _, part in ipairs(char:GetDescendants()) do
+			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+				pcall(function() part.CanCollide = true end)
+			end
+		end
+	end
+end
+
 local function enableNewFly()
 	newFlyEnabled = true
 	local char = player.Character
@@ -299,6 +332,9 @@ local function enableNewFly()
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	
 	if not root or not humanoid then return end
+	
+	-- Enable noclip
+	enableNoclip()
 	
 	-- Create BodyVelocity for movement
 	newFlyVelocity = Instance.new("BodyVelocity")
@@ -348,9 +384,10 @@ local function enableNewFly()
 			moveDir = moveDir - Vector3.new(0, 1, 0)
 		end
 		
-		-- Apply movement at 0.3 speed
+		-- Apply movement with adjustable speed
+		local speedMult = newFlySpeed / 100
 		if moveDir.Magnitude > 0 then
-			newFlyVelocity.Velocity = moveDir.Unit * 0.3
+			newFlyVelocity.Velocity = moveDir.Unit * speedMult
 		else
 			newFlyVelocity.Velocity = Vector3.new(0, 0, 0)
 		end
@@ -367,6 +404,9 @@ end
 local function disableNewFly()
 	newFlyEnabled = false
 	local char = player.Character
+	
+	-- Disable noclip
+	disableNoclip()
 	
 	if newFlyConnection then
 		newFlyConnection:Disconnect()
@@ -400,7 +440,7 @@ local function disableNewFly()
 end
 
 MainTab:CreateToggle({
-	Name = "New Fly (Spam Freeze + VFly 0.3)",
+	Name = "New Fly (VFly + Noclip)",
 	CurrentValue = false,
 	Flag = "Toggle_NewFly",
 	Callback = function(Value)
@@ -408,6 +448,32 @@ MainTab:CreateToggle({
 			enableNewFly()
 		else
 			disableNewFly()
+		end
+	end,
+})
+
+MainTab:CreateSlider({
+	Name = "Fly Speed",
+	Min = 1,
+	Max = 100,
+	Increment = 1,
+	Suffix = "/100",
+	CurrentValue = 50,
+	Flag = "Slider_FlySpeed",
+	Callback = function(Value)
+		newFlySpeed = Value
+	end,
+})
+
+MainTab:CreateInput({
+	Name = "Custom Fly Speed",
+	PlaceholderText = "Enter 1-100",
+	RemoveTextAfterFocusLost = false,
+	Flag = "Input_FlySpeed",
+	Callback = function(Text)
+		local speed = tonumber(Text)
+		if speed and speed >= 1 and speed <= 100 then
+			newFlySpeed = speed
 		end
 	end,
 })
@@ -777,5 +843,7 @@ Players.PlayerRemoving:Connect(function(plr)
 		espObjects[plr] = nil
 	end
 end)
+
+print("✅ Vexon StealHub loaded! Press K to toggle UI.")
 
 print("✅ Vexon StealHub loaded! Press K to toggle UI.")
