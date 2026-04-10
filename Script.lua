@@ -510,72 +510,12 @@ ESPTab:CreateToggle({
 		else
 			safeDisconnect("espAdded")
 			safeDisconnect("espUpdate")
-			-- Clean up chams if ESP is disabled
-			if chamsEnabled then
-				destroyAllChams()
-				chamsEnabled = false
-			end
 			for _, gui in pairs(espObjects) do
 				if gui and gui.Parent then
 					pcall(function() gui:Destroy() end)
 				end
 			end
 			espObjects = {}
-		end
-	end,
-})
-
--- Chams Toggle
-ESPTab:CreateToggle({
-	Name = "Chams (Wallhack)",
-	CurrentValue = false,
-	Flag = "Toggle_Chams",
-	Callback = function(Value)
-		chamsEnabled = Value
-		if Value then
-			-- Create chams for existing players
-			for _, plr in ipairs(Players:GetPlayers()) do
-				if plr ~= player then
-					pcall(function() createChams(plr) end)
-				end
-			end
-
-			-- Listen for new players
-			safeDisconnect("chamsAdded")
-			connections.chamsAdded = Players.PlayerAdded:Connect(function(plr)
-				task.wait(0.2)
-				pcall(function() createChams(plr) end)
-			end)
-
-			-- Listen for character changes
-			safeDisconnect("chamsCharAdded")
-			connections.chamsCharAdded = {}
-			for _, plr in ipairs(Players:GetPlayers()) do
-				if plr ~= player then
-					table.insert(connections.chamsCharAdded, plr.CharacterAdded:Connect(function()
-						destroyChams(plr)
-						task.wait(0.2)
-						pcall(function() createChams(plr) end)
-					end))
-				end
-			end
-
-			Rayfield:Notify({
-				Title = "Chams",
-				Content = "Chams enabled for all players",
-				Duration = 2,
-				Image = 4483362417,
-			})
-		else
-			destroyAllChams()
-			safeDisconnect("chamsAdded")
-			safeDisconnect("chamsCharAdded")
-			Rayfield:Notify({
-				Title = "Chams",
-				Content = "Chams disabled",
-				Duration = 2,
-				Image = 4483362417,
-			})
 		end
 	end,
 })
@@ -671,59 +611,6 @@ ESPTab:CreateToggle({
 	end,
 })
 
--- CHAMS (Wallhack) System
-local chamsObjects = {}
-local chamsEnabled = false
-
-local function createChams(plr)
-	if not plr or not plr.Character or chamsObjects[plr] then return end
-	
-	local char = plr.Character
-	local chamsContainer = Instance.new("Folder")
-	chamsContainer.Name = plr.Name .. "_CHMS"
-	chamsContainer.Parent = CoreGui
-	
-	chamsObjects[plr] = chamsContainer
-	
-	for _, part in ipairs(char:GetDescendants()) do
-		if part:IsA("BasePart") then
-			local wireframe = Instance.new("Part")
-			wireframe.Shape = Enum.PartType.Block
-			wireframe.Material = Enum.Material.Neon
-			wireframe.CanCollide = false
-			wireframe.CFrame = part.CFrame
-			wireframe.Size = part.Size
-			wireframe.Color = Color3.fromRGB(0, 255, 0)
-			wireframe.Transparency = 0.3
-			wireframe.TopSurface = Enum.SurfaceType.Smooth
-			wireframe.BottomSurface = Enum.SurfaceType.Smooth
-			
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = part
-			weld.Part1 = wireframe
-			weld.Parent = wireframe
-			
-			wireframe.Parent = chamsContainer
-		end
-	end
-end
-
-local function destroyChams(plr)
-	if chamsObjects[plr] then
-		pcall(function() chamsObjects[plr]:Destroy() end)
-		chamsObjects[plr] = nil
-	end
-end
-
-local function destroyAllChams()
-	for plr, container in pairs(chamsObjects) do
-		if container and container.Parent then
-			pcall(function() container:Destroy() end)
-		end
-		chamsObjects[plr] = nil
-	end
-end
-
 -- LEADERBOARD TAB
 local LeaderboardTab = Window:CreateTab("Leaderboard", 4483362417)
 
@@ -799,7 +686,7 @@ end)
 
 -- SETTINGS TAB
 SettingsTab:CreateLabel("Version: 1.0 - Rayfield Edition")
-SettingsTab:CreateLabel("Features: Server Hop, Rejoin, ESP, Secret Highlighter, Chams, Leaderboard")
+SettingsTab:CreateLabel("Features: Server Hop, Rejoin, ESP, Secret Highlighter, Leaderboard")
 SettingsTab:CreateButton({
 	Name = "Close UI",
 	Callback = function()
@@ -822,10 +709,6 @@ Players.PlayerRemoving:Connect(function(plr)
 	if espObjects[plr] then
 		pcall(function() espObjects[plr]:Destroy() end)
 		espObjects[plr] = nil
-	end
-	-- Clean up Chams
-	if chamsObjects[plr] then
-		destroyChams(plr)
 	end
 end)
 
